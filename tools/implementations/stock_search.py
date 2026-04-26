@@ -1,5 +1,8 @@
 from pydantic import BaseModel, Field
 from tools.base import BaseTool
+import yfinance as yf
+import asyncio
+
 
 class StockQuoteSchema(BaseModel):
     ticker: str = Field(..., description="The stock ticker symbol (e.g., AAPL, TSLA).")
