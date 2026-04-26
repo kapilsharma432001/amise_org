@@ -5,3 +5,5 @@ tenacity
 pydantic
 httpx
 python-dotenv
+psycopg[binary,async]
+pgvector
