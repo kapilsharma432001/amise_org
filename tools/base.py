@@ -10,7 +10,7 @@ class BaseTool(ABC):
 
     name: str
     description: str
-    arg_schema: Type[BaseModel]
+    args_schema: Type[BaseModel]
 
     @abstractmethod
     async def execute(self, **kwargs) -> Any:
@@ -24,7 +24,7 @@ class BaseTool(ABC):
             "function": {
                 "name": self.name,
                 "description": self.description,
-                "parameters": self.arg_schema.model_json_schema(),
+                "parameters": self.args_schema.model_json_schema(),
             },
         }
     
