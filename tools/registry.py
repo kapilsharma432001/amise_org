@@ -20,7 +20,7 @@ class ToolRegistry:
         tool = self._tools[tool_name]
         
         # Pydantic validation: Ensure LLM args match our schema
-        validated_args = tool.arg_schema(**arguments)
+        validated_args = tool.args_schema(**arguments)
 
         try:
             # Execute the tool with validated arguments
