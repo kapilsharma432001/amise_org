@@ -7,3 +7,5 @@ httpx
 python-dotenv
 psycopg[binary,async]
 pgvector
+duckduckgo-search
+yfinance
