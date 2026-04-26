@@ -1,4 +1,7 @@
 import os
+import sys
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from dotenv import load_dotenv
 load_dotenv()
 from fastapi import FastAPI, HTTPException
@@ -6,6 +9,12 @@ from fastapi.testclient import TestClient
 from pydantic import BaseModel, Field
 from litellm import acompletion, exceptions
 from tenacity import retry, stop_after_attempt, wait_exponential
+import asyncio
+from amise_org.data.database import setup_database, DATABASE_URL
+from amise_org.data.ingestion import ingest_document
+from amise_org.data.retriever import hybrid_search
+
+
 
 # Environment variables for API keys
 os.environ["ANTHROPIC_API_KEY"] = os.getenv("ANTHROPIC_API_KEY", "dummy-anthropic-key")
@@ -66,23 +75,39 @@ async def process_query(req: QueryRequest):
         raise HTTPException(status_code=401, detail="Authentication failed. Check API keys.")
     except Exception as e:
         raise HTTPException(status_code = 500, detail = str(e))
-    
+
+async def run_smoke_test():
+    print("--- AMISE Day 2: Production Hybrid RAG DB Test ---")
+    print("Setting up pgvector tables and HNSW indexes...")
+    try:
+        await setup_database()
+    except Exception as e:
+        print(f"DB Connection failed. Ensure PostgreSQL is running at {DATABASE_URL}")
+        print(f"Error: {e}")
+        return
+
+    # Dummy Data Ingestion
+    docs = [
+        "Tiger Analytics released a new enterprise AI product in 2025.",
+        "The Q3 revenue for AAPL dropped by 2% due to supply chain issues.",
+        "PostgreSQL 16 introduces better query optimization for JSONB.",
+        "Large Language Models struggle with exact math and require external tools.",
+        "FastAPI integrates perfectly with Starlette for asynchronous execution."
+    ]
+    print("Ingesting and embedding documents...")
+    try:
+        for doc in docs:
+            await ingest_document(doc)
+    except Exception as e:
+        print(f"Embedding failed. Ensure valid OPENAI_API_KEY. Error: {e}")
+        return
+    test_query = "enterprise AI products 2025"
+    print(f"\nExecuting Hybrid Search for: '{test_query}'")
+    results = await hybrid_search(test_query, limit=2)
+
+    for i, res in enumerate(results, 1):
+        print(f"\nRank {i} (RRF Score: {res['rrf_score']:.4f})")
+        print(f"Content: {res['content']}")
 
 if __name__ == "__main__":
-    print("AMISE Day 1")
-
-    client = TestClient(app)
-
-    payload = {
-        "prompt": "In one sentence, what is the core advantage of a multi-agent AI system?",
-        "system": "You are a senior AI architect."
-    }
-    print(f"Sending POST /api/v1/query with payload:\n{payload}\n")
-    response = client.post("/api/v1/query", json=payload)
-
-
-    print(f"Status Code: {response.status_code}")
-    print(f"Response JSON: {response.json()}")
-    
-    if response.status_code == 401:
-        print("\nNote: Smoke test caught the 401 Auth Error gracefully. Add real API keys to see LLM output.")
+    asyncio.run(run_smoke_test())
