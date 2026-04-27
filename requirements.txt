@@ -9,3 +9,6 @@ psycopg[binary,async]
 pgvector
 duckduckgo-search
 yfinance
+langgraph
+langchain-core
+langchain-openai
